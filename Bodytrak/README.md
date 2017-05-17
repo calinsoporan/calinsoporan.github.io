@@ -1,4 +1,4 @@
-# Bodytrak web App
+# Bodytrak Web App
 
 Available at https://calinsoporan.github.io/Bodytrak/
 
