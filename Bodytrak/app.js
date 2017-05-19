@@ -1,3 +1,3 @@
-statusText.addEventListener('click', function() {
+search.addEventListener('click', function() {
   Bodytrak.connect()
 });
