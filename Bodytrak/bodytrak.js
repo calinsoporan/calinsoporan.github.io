@@ -32,39 +32,40 @@
                 let decoder = new TextDecoder('utf-8');
                 characteristics.forEach(characteristic => {
                 
-                switch (characteristic.uuid) {
-        case BluetoothUUID.getCharacteristic('manufacturer_name_string'):
-          queue = queue.then(_ => characteristic.readValue()).then(value => {
-            log('> Manufacturer Name String: ' + decoder.decode(value));
-          });
-          break;
+                switch (characteristic.uuid)
+                {
+                    case BluetoothUUID.getCharacteristic('manufacturer_name_string'):
+                        queue = queue.then(_ => characteristic.readValue()).then(value => {
+                        log('> Manufacturer Name String: ' + decoder.decode(value));
+                    });
+                    break;
 
-        case BluetoothUUID.getCharacteristic('model_number_string'):
-          queue = queue.then(_ => characteristic.readValue()).then(value => {
-            log('> Model Number String: ' + decoder.decode(value));
-          });
-          break;
+                    case BluetoothUUID.getCharacteristic('model_number_string'):
+                        queue = queue.then(_ => characteristic.readValue()).then(value => {
+                        log('> Model Number String: ' + decoder.decode(value));
+                    });
+                    break;
 
-        case BluetoothUUID.getCharacteristic('hardware_revision_string'):
-          queue = queue.then(_ => characteristic.readValue()).then(value => {
-            log('> Hardware Revision String: ' + decoder.decode(value));
-          });
-          break;
+                    case BluetoothUUID.getCharacteristic('hardware_revision_string'):
+                        queue = queue.then(_ => characteristic.readValue()).then(value => {
+                        log('> Hardware Revision String: ' + decoder.decode(value));
+                    });
+                    break;
 
-        case BluetoothUUID.getCharacteristic('software_revision_string'):
-          queue = queue.then(_ => characteristic.readValue()).then(value => {
-            log('> Software Revision String: ' + decoder.decode(value));
-          });
-          break;
+                    case BluetoothUUID.getCharacteristic('software_revision_string'):
+                        queue = queue.then(_ => characteristic.readValue()).then(value => {
+                        log('> Software Revision String: ' + decoder.decode(value));
+                    });
+                    break;
 
-        default: log('> Unknown Characteristic: ' + characteristic.uuid);
-      }
-    });
-    return queue;
-  })
-  .catch(error => {
-    log('Argh! ' + error);
-  });
-}
+                    default: log('> Unknown Characteristic: ' + characteristic.uuid);
+                }
+            });
+            return queue;
+            })
+            .catch(error => {
+                log('Argh! ' + error);
+            });
+        }
     }
-}
+})();
