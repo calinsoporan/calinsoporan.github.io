@@ -1,3 +1,3 @@
-search.addEventListener('click', function() {
+document.getElementById("search").addEventListener('click', function() {
   Bodytrak.connect()
 });
