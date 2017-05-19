@@ -11,7 +11,7 @@
             this._characteristics = new Map();
         }
 
-        function connect()
+        connect()
         {
             log('Requesting any Bluetooth Device...');
             navigator.bluetooth.requestDevice({filters:[{name:[ 'BodyTrak' ]}]})
