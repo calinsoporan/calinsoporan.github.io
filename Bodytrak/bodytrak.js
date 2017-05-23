@@ -62,57 +62,72 @@
                                               })
             .then(device => {
                 this.device = device
+                device.addEventListener('gattserverdisconnected', onDisconnected);
                 console.log('Connecting to GATT Server...');
                 return device.gatt.connect();
             })
             .then(server => {
                 this.server = server
-                console.log('Getting Device Information Service...');
-                return server.getPrimaryService('device_information');
+                console.log('Getting Primary Services...');
+                return server.getPrimaryServices();
             })
-            .then(service => {
-                console.log('Getting Device Information Characteristics...');
-                return service.getCharacteristics();
-            })
-            .then(characteristics => {
-                let queue = Promise.resolve();
-                let decoder = new TextDecoder('utf-8');
-                characteristics.forEach(characteristic => {
- 
-                switch (characteristic.uuid)
-                {
-                    case BluetoothUUID.getCharacteristic('manufacturer_name_string'):
-                        queue = queue.then(_ => characteristic.readValue()).then(value => {
-                        console.log('> Manufacturer Name String: ' + decoder.decode(value));
+            .then(services => {
+                console.log('Getting Device Characteristics...');
+                services.forEach(service => {
+                    return service.getCharacteristics();
+                    .then(characteristics => {
+                         console.log('> Service: ' + service.uuid);
+                         characteristics.forEach(characteristic => {
+                             console.log('>> Characteristic: ' + characeristic.uuid);
+                             _cacheCharacteristic(characeristic.uuid, characteristic);
+                         });
                     });
-                    break;
-
-                    case BluetoothUUID.getCharacteristic('model_number_string'):
-                        queue = queue.then(_ => characteristic.readValue()).then(value => {
-                        console.log('> Model Number String: ' + decoder.decode(value));
-                    });
-                    break;
-
-                    case BluetoothUUID.getCharacteristic('hardware_revision_string'):
-                        queue = queue.then(_ => characteristic.readValue()).then(value => {
-                        console.log('> Hardware Revision String: ' + decoder.decode(value));
-                    });
-                    break;
-
-                    case BluetoothUUID.getCharacteristic('software_revision_string'):
-                        queue = queue.then(_ => characteristic.readValue()).then(value => {
-                        console.log('> Software Revision String: ' + decoder.decode(value));
-                    });
-                    break;
-
-                    default: console.log('> Unknown Characteristic: ' + characteristic.uuid);
-                }
-            });
-            return queue;
+                })
             })
             .catch(error => {
                 console.log('Argh! ' + error);
             });
+        }
+
+        /* Utility functions */
+        _cacheCharacteristic(characteristicUuid, characteristic)
+        {
+            this._characteristics.set(characteristicUuid, characteristic);
+        }
+
+        _readCharacteristicValue(characteristicUuid)
+        {
+            let characteristic = this._characteristics.get(characteristicUuid);
+            return characteristic.readValue()
+            .then(value => {
+                // In Chrome 50+, a DataView is returned instead of an ArrayBuffer.
+                value = value.buffer ? value : new DataView(value);
+                return value;
+            });
+        }
+
+        _writeCharacteristicValue(characteristicUuid, value)
+        {
+            let characteristic = this._characteristics.get(characteristicUuid);
+            return characteristic.writeValue(value);
+        }
+
+        _startNotifications(characteristicUuid)
+        {
+            let characteristic = this._characteristics.get(characteristicUuid);
+            // Returns characteristic to set up characteristicvaluechanged event
+            // handlers in the resolved promise.
+            return characteristic.startNotifications()
+            .then(() => characteristic);
+        }
+
+        _stopNotifications(characteristicUuid)
+        {
+            let characteristic = this._characteristics.get(characteristicUuid);
+            // Returns characteristic to remove characteristicvaluechanged event
+            // handlers in the resolved promise.
+            return characteristic.stopNotifications()
+            .then(() => characteristic);
         }
     }
 
