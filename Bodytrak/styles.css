@@ -6,7 +6,6 @@
     bottom: 0;
     background-color: #333333;
     font-family: Roboto;
-    text-align: center;
 }
 
 #search {
@@ -36,6 +35,7 @@
     position: absolute;
     bottom:60%;
     right:40%;
+    /*display: none;*/
 }
 
 #search:hover {
@@ -54,7 +54,7 @@
 	top:1px;
 }
 */
-.loading {
+#loader.loading {
     border: 16px solid #f3f3f3; /* Light grey */
     border-top: 16px solid blue;
     border-right: 16px solid green;
@@ -73,3 +73,35 @@
     100% { transform: rotate(360deg); }
 }
 
+.file_browse {
+    padding: 10px;
+    border: 3px solid #2e466e;
+    background-color:#2e466e;
+    width: 300px; 
+    height: 150px;
+    position: absolute;
+    bottom:60%;
+    right:40%;
+    display: none;
+}
+
+  #progress_bar {
+    margin: 10px 0;
+    padding: 3px;
+    border: 1px solid #000;
+    font-size: 14px;
+    clear: both;
+    opacity: 0;
+    -moz-transition: opacity 1s linear;
+    -o-transition: opacity 1s linear;
+    -webkit-transition: opacity 1s linear;
+  }
+  #progress_bar.loading {
+    opacity: 1.0;
+  }
+  #progress_bar .percent {
+    background-color: #99ccff;
+    height: auto;
+    width: 0;
+  }
+  
