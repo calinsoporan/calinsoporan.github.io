@@ -174,3 +174,5 @@
 
     window.bodytrak = new Bodytrak();
 })();
+
+//TODO: have the same function for characteristic notific and have a switch case checking for e.target.uuid.
