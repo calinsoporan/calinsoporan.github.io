@@ -43,6 +43,20 @@ document.getElementById("send_file").addEventListener('click', function()
     };
     reader.onload = function(e)
     {
+        var tx_array = new Uint8Array(e.target.result);
+        var index = 0;
+        var CHUNK_SIZE = 20;        // We can send max 20 bytes over BLE
+        var MODEM_1K = 1000;
+        var length = tx_array.length;
+        var slice;
+        console.log("Length = " + length);
+        while (index < length)
+        {
+            slice = tx_array.subarray(index, Math.min(index + CHUNK_SIZE, length));
+            index += CHUNK_SIZE;
+            //TODO: send here data over BLE
+            //TODO: after 1k wait for response from Bodytrak before sending a new 1k chunk
+        }
         // Ensure that the progress bar displays 100% at the end.
         progress.style.width = '100%';
         progress.textContent = '100%';
@@ -51,7 +65,7 @@ document.getElementById("send_file").addEventListener('click', function()
     };
 
     // Read in the image file as a binary string.
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   
 });
 
