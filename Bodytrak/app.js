@@ -1,4 +1,4 @@
-document.getElementById("search").addEventListener('click', function() 
+document.getElementById("search").addEventListener('click', function()
 {
     addLoader();
 
@@ -13,7 +13,7 @@ document.getElementById('choose_file').addEventListener('change', function()
     document.getElementById("send_file").disabled = false;
 });
 
-document.getElementById("send_file").addEventListener('click', function() 
+document.getElementById("send_file").addEventListener('click', function()
 {
     var files = document.getElementById('choose_file').files;
     if (!files.length)
@@ -25,11 +25,11 @@ document.getElementById("send_file").addEventListener('click', function()
     document.getElementById("file_paragraph").style.display = "none";
 
     var progress = document.querySelector('.percent');
-    
+
     // Reset progress indicator on new file selection.
     progress.style.width = '0%';
     progress.textContent = '0%';
-    
+
     reader = new FileReader();
     reader.onerror = errorHandler;
     reader.onprogress = updateProgress;
@@ -43,20 +43,10 @@ document.getElementById("send_file").addEventListener('click', function()
     };
     reader.onload = function(e)
     {
-        var tx_array = new Uint8Array(e.target.result);
-        var index = 0;
-        var CHUNK_SIZE = 20;        // We can send max 20 bytes over BLE
-        var MODEM_1K = 1000;
-        var length = tx_array.length;
-        var slice;
-        console.log("Length = " + length);
-        while (index < length)
-        {
-            slice = tx_array.subarray(index, Math.min(index + CHUNK_SIZE, length));
-            index += CHUNK_SIZE;
-            //TODO: send here data over BLE
-            //TODO: after 1k wait for response from Bodytrak before sending a new 1k chunk
-        }
+        var fw_array = new Uint8Array(e.target.result);
+        bodytrak.sm_init();
+        bodytrak.sm_init_ptek(fw_array);
+
         // Ensure that the progress bar displays 100% at the end.
         progress.style.width = '100%';
         progress.textContent = '100%';
@@ -66,7 +56,6 @@ document.getElementById("send_file").addEventListener('click', function()
 
     // Read in the image file as a binary string.
     reader.readAsArrayBuffer(file);
-  
 });
 
 function addLoader()
@@ -98,17 +87,18 @@ function updateProgress(evt)
 
 function errorHandler(evt)
 {
-    switch(evt.target.error.code) {
-      case evt.target.error.NOT_FOUND_ERR:
-        alert('File Not Found!');
-        break;
-      case evt.target.error.NOT_READABLE_ERR:
-        alert('File is not readable');
-        break;
-      case evt.target.error.ABORT_ERR:
-        break; // noop
-      default:
-        alert('An error occurred reading this file.');
+    switch(evt.target.error.code)
+    {
+        case evt.target.error.NOT_FOUND_ERR:
+            alert('File Not Found!');
+            break;
+        case evt.target.error.NOT_READABLE_ERR:
+            alert('File is not readable');
+            break;
+        case evt.target.error.ABORT_ERR:
+            break; // noop
+        default:
+            alert('An error occurred reading this file.');
     };
-  }
-  
+}
+
