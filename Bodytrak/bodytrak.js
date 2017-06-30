@@ -15,21 +15,22 @@
             this._characteristics = new Map();
             this.bleBaseUUID = "4e3c0000-e927-98a1-834f-4e210e9b56ac";
             this.dfuBaseUUID = "00001530-1212-efde-1523-785feabcd123";
-            this.serviceUUID = {'dis' :         0x180A,
-                                'hrs' :         0x180D,
-                                'bis' :         0x180F,
-                                'hts':          0x1809,
-                                'rscs' :        0x1814,
-                                'dfu' :         this.dfuBaseUUID,
-                                'rmas' :        this._set_uuid(this.bleBaseUUID, "0100"),
-                                'vo2' :         this._set_uuid(this.bleBaseUUID, "0200"),
-                                'acc' :         this._set_uuid(this.bleBaseUUID, "0300"),
-                                'vp_conf' :     this._set_uuid(this.bleBaseUUID, "0400"),
+            this.serviceUUID = {'dis'         : 0x180A,
+                                'hrs'         : 0x180D,
+                                'bis'         : 0x180F,
+                                'hts'         : 0x1809,
+                                'rscs'        : 0x1814,
+                                'dfu'         : this.dfuBaseUUID,
+                                'rmas'        : this._set_uuid(this.bleBaseUUID, "0100"),
+                                'vo2'         : this._set_uuid(this.bleBaseUUID, "0200"),
+                                'acc'         : this._set_uuid(this.bleBaseUUID, "0300"),
+                                'vp_conf'     : this._set_uuid(this.bleBaseUUID, "0400"),
                                 'sensor_conf' : this._set_uuid(this.bleBaseUUID, "0500"),
-                                'log' :         this._set_uuid(this.bleBaseUUID, "0600"),
-                                'rtd' :         this._set_uuid(this.bleBaseUUID, "0700"),
-                                'workout' :     this._set_uuid(this.bleBaseUUID, "0800"),
-                               };
+                                'log'         : this._set_uuid(this.bleBaseUUID, "0600"),
+                                'rtd'         : this._set_uuid(this.bleBaseUUID, "0700"),
+                                'workout'     : this._set_uuid(this.bleBaseUUID, "0800"),
+                                'ptek'        : this._set_uuid(this.bleBaseUUID, "0900"),
+                              };
              this.charUUID = {'dis_manufac_name'    : 0x2A29,
                               'dis_model_nbr'       : 0x2A24,
                               'dis_serial_nbr'      : 0x2A25,
@@ -40,8 +41,8 @@
                               'hts_meas'            : 0x2A1C,
                               'rscs_meas'           : 0x2A53,
                               'rscs_feature'        : 0x2A54,
-                              'dfu_pkt'             : this._set_uuid(this.bleBaseUUID, "1532"),
-                              'dfu_cp'              : this._set_uuid(this.bleBaseUUID, "1531"),
+                              'dfu_pkt'             : this._set_uuid(this.dfuBaseUUID, "1532"),
+                              'dfu_cp'              : this._set_uuid(this.dfuBaseUUID, "1531"),
                               'dfu_rev'             : this._set_uuid(this.dfuBaseUUID, "1534"),
                               'rmas_meas'           : this._set_uuid(this.bleBaseUUID, "0101"),
                               'vo2_meas'            : this._set_uuid(this.bleBaseUUID, "0201"),
@@ -76,16 +77,18 @@
                               'log_dl_data'         : this._set_uuid(this.bleBaseUUID, "0606"),
                               'rtd_meas'            : this._set_uuid(this.bleBaseUUID, "0701"),
                               'workout_cp'          : this._set_uuid(this.bleBaseUUID, "0801"),
-                             };
-            this.dfu_op_code = { 'OP_CODE_START_DFU' : 1,
+                              'ptek_cp'             : this._set_uuid(this.bleBaseUUID, "0901"),
+                              'ptek_pkt'            : this._set_uuid(this.bleBaseUUID, "0902"),
+                              'ptek_rev'            : this._set_uuid(this.bleBaseUUID, "0903"),
+                            };
+            this.dfu_op_code = { 'OP_CODE_START_UPDATE' : 1,
                                  'OP_CODE_RECEIVE_INIT' : 2,
                                  'OP_CODE_RECEIVE_FW' : 3,
                                  'OP_CODE_VALIDATE' : 4,
                                  'OP_CODE_ACTIVATE_N_RESET' : 5,
                                  'OP_CODE_SYS_RESET' : 6,
                                  'OP_CODE_IMAGE_SIZE_REQ' : 7,
-                                 'OP_CODE_PKT_RCPT_NOTIF_REQ' : 8
-                                 'OP_CODE_START_PERFORMTEK_U' : 9,
+                                 'OP_CODE_PKT_RCPT_NOTIF_REQ' : 8,
                                  'OP_CODE_RESPONSE' : 16,
                                  'OP_CODE_PKT_RCPT_NOTIF' : 17,
                                 };
@@ -107,23 +110,10 @@
 
         connect()
         {
-            console.log('Test se uuid ok... ' + this.charUUID['workout_cp'])
             console.log('Requesting any Bluetooth Device...');
             navigator.bluetooth.requestDevice({filters:[{name:[ "BodyTrak" ]}],
-                                               optionalServices: [this.serviceUUID['dis'],
-                                                                  this.serviceUUID['hrs'],
-                                                                  this.serviceUUID['bis'],
-                                                                  this.serviceUUID['hts'],
-                                                                  this.serviceUUID['rscs'],
-                                                                  this.serviceUUID['dfu'],
-                                                                  this.serviceUUID['rmas'],
-                                                                  this.serviceUUID['vo2'],
-                                                                  this.serviceUUID['acc'],
-                                                                  this.serviceUUID['vp_conf'],
-                                                                  this.serviceUUID['sensor_conf'],
-                                                                  this.serviceUUID['log'],
-                                                                  this.serviceUUID['rtd'],
-                                                                  this.serviceUUID['workout'],
+                                               optionalServices: [
+                                                                 this.serviceUUID['ptek'],
                                                                  ]
                                               })
             .then(device => {
@@ -179,6 +169,7 @@
 
         _startNotifications(characteristicUuid)
         {
+            console.log("Start notif for: " + characteristicUuid);
             let characteristic = this._characteristics.get(characteristicUuid);
             // Returns characteristic to set up characteristicvaluechanged event handlers in the resolved promise.
             return characteristic.startNotifications()
@@ -197,42 +188,41 @@
         {
             return this.bleBaseUUID.substr(0, 4) + short_uuid + this.bleBaseUUID.substr(4 + short_uuid.length);
         }
-    }
 
-    // Bodytrak state machine
-    sm_init()
-    {
-        this.sm = new SM();
-        var sm_table = [
-                        { sm_state: 'STATE_INIT',               sm_event: 'START_PTEK_UPDATE',  sm_action: performtek_update_start,     sm_next_state: 'STATE_START_PTEK_UPDATE' },
-                        { sm_state: 'STATE_START_PTEK_UPDATE',  sm_event: 'SEND_PTEK_FW',       sm_action: performtek_send_pkt,         sm_next_state: 'STATE_SEND_PTEK_FW'      },
-                        { sm_state: 'STATE_SEND_PTEK_FW',       sm_event: 'SEND_PTEK_FW',       sm_action: performtek_send_pkt,         sm_next_state: 'STATE_SEND_PTEK_FW'      },
-                        { sm_state: 'STATE_SEND_PTEK_FW',       sm_event: 'PTEK_FW_END',        sm_action: performtek_reset,            sm_next_state: 'STATE_SEND_PTEK_FW'      },
-                        { sm_state: 'STATE_GUARD',              sm_event: null,                 sm_action: sm_reset,                    sm_next_state: 'STATE_IDLE'              },
+        // Bodytrak state machine
+        sm_init()
+        {
+            this.sm = new SM();
+            var sm_table = [
+                        { sm_state: 'STATE_INIT',               sm_event: 'START_PTEK_UPDATE',  sm_action: this.performtek_update_start,     sm_next_state: 'STATE_START_PTEK_UPDATE' },
+                        { sm_state: 'STATE_START_PTEK_UPDATE',  sm_event: 'SEND_PTEK_FW',       sm_action: this.performtek_send_pkt,         sm_next_state: 'STATE_SEND_PTEK_FW'      },
+                        { sm_state: 'STATE_SEND_PTEK_FW',       sm_event: 'SEND_PTEK_FW',       sm_action: this.performtek_send_pkt,         sm_next_state: 'STATE_SEND_PTEK_FW'      },
+                        { sm_state: 'STATE_SEND_PTEK_FW',       sm_event: 'PTEK_FW_END',        sm_action: this.performtek_reset,            sm_next_state: 'STATE_SEND_PTEK_FW'      },
+                        { sm_state: 'STATE_GUARD',              sm_event: null,                 sm_action: this.sm_reset,                    sm_next_state: 'STATE_INIT'              },
                        ];
 
-        this.sm.init_sm(sm_table, 'STATE_IDLE', 'STATE_GUARD');
-    }
-
-    sm_ptek_update(fw_data)
-    {
-        if (fw_data == null)
-        {
-            console.log("Some problem with fw data image array");
-            return false;
+            this.sm.init_sm(sm_table, 'STATE_INIT', 'STATE_GUARD');
         }
-        this.fw_image = fw_data;
-        this.tx_index = 0;
-        this.sm.make_transition('START_PTEK_UPDATE', null;
-        return true;
-    }
 
-    performtek_update_start()
-    {
-        var characteristic = _startNotifications(this.charUUID['dfu_cp']);
-        characteristic.addEventListener('characteristicvaluechanged', handlePtekDfuValueChanged);
-        var nbr_of_pkts = Math.ceil(this.fw_image.length / this.PKT_1K_SIZE);
-        var tx_data = new Uint8Array([this.commands['OP_CODE_START_PERFORMTEK_U'],
+        sm_ptek_update(fw_data)
+        {
+            if (fw_data == null)
+            {
+                console.log("Some problem with fw data image array");
+                return false;
+            }
+            this.fw_image = fw_data;
+            this.tx_index = 0;
+            this.sm.make_transition('START_PTEK_UPDATE', null);
+            return true;
+        }
+
+        performtek_update_start()
+        {
+            var characteristic = this._startNotifications(this.charUUID['dfu_cp']);
+            characteristic.addEventListener('characteristicvaluechanged', handlePtekDfuValueChanged);
+            var nbr_of_pkts = Math.ceil(this.fw_image.length / this.PKT_1K_SIZE);
+            var tx_data = new Uint8Array([this.commands['OP_CODE_START_UPDATE'],
                                       (nbr_of_pkts & 0x00FF),
                                       (nbr_of_pkts & 0xFF00) >> 8,
                                       (this.fw_image.length & 0x000000FF),
@@ -240,101 +230,102 @@
                                       (this.fw_image.length & 0x00FF0000) >> 16,
                                       (this.fw_image.length & 0xFF000000) >> 24
                                      ]);
-        var value = _writeCharacteristicValue('dfu_cp', tx_data);
-    }
+            var value = this._writeCharacteristicValue(this.charUUID['dfu_cp'], tx_data);
+        }
 
-    handlePtekDfuValueChanged(event)
-    {
-        if (event.target.uuid = this.charUUID['dfu_cp']])
+        handlePtekDfuValueChanged(event)
         {
-            var rx_data = new Uint8Array(event.target.value);
-            if (this.dfu_op_code['OP_CODE_RESPONSE'] == rx_data[0])
+            if (event.target.uuid = this.charUUID['dfu_cp'])
             {
-                switch (rx_data[1])
+                var rx_data = new Uint8Array(event.target.value);
+                if (this.dfu_op_code['OP_CODE_RESPONSE'] == rx_data[0])
                 {
-                    case this.dfu_procedure['BLE_DFU_START_PROCEDURE']:
-                        switch (rx_data[2])
-                        {
-                            case this.dfu_resp_val['BLE_DFU_RESP_VAL_SUCCESS']:
-                                this.sm.make_transition('SEND_PTEK_FW', null);
+                    switch (rx_data[1])
+                    {
+                        case this.dfu_procedure['BLE_DFU_START_PROCEDURE']:
+                            switch (rx_data[2])
+                            {
+                                case this.dfu_resp_val['BLE_DFU_RESP_VAL_SUCCESS']:
+                                    this.sm.make_transition('SEND_PTEK_FW', null);
 
-                            default:
-                                console.log("DFU start procedure error);
-                                this.sm.make_transition('ERROR', null);
-                        }
-                        break;
+                                default:
+                                    console.log("DFU start procedure error");
+                                    this.sm.make_transition('ERROR', null);
+                            }
+                            break;
 
-                    case this.dfu_resp_val['BLE_DFU_RECEIVE_APP_PROCEDURE']:
-                        switch (rx_data[2])
-                        {
-                            case this.dfu_resp_val['BLE_DFU_RESP_SEND_NEXT_1K']:
-                                this.sm.make_transition('SEND_PTEK_FW', null);
+                        case this.dfu_resp_val['BLE_DFU_RECEIVE_APP_PROCEDURE']:
+                            switch (rx_data[2])
+                            {
+                                case this.dfu_resp_val['BLE_DFU_RESP_SEND_NEXT_1K']:
+                                    this.sm.make_transition('SEND_PTEK_FW', null);
 
-                            default:
-                                console.log("DFU receive app procedure error);
-                                this.sm.make_transition('ERROR', null);
-                        }
-                        break;
+                                default:
+                                    console.log("DFU receive app procedure error");
+                                    this.sm.make_transition('ERROR', null);
+                            }
+                            break;
 
-                    default:
-                        console.log("Procedure value not supported");
-                        this.sm.make_transition('ERROR', null);
+                        default:
+                            console.log("Procedure value not supported");
+                            this.sm.make_transition('ERROR', null);
+                    }
+                }
+                else if (this.dfu_op_code['OP_CODE_PKT_RCPT_NOTIF'] == rx_data[0])
+                {
+                    var nbr_bytes = rx_data[1] | (rx_data[2] << 8) | (rx_data[3] << 16) | (rx_data[4] << 24);
+                    if (this.fw_image.length != nbr_bytes)
+                    {
+                        console.log("Some error here!");
+                    }
+                    this.sm.make_transition('PTEK_FW_END', null);
                 }
             }
-            else if (this.dfu_op_code['OP_CODE_PKT_RCPT_NOTIF'] == rx_data[0])
+            else
             {
-                var nbr_bytes = rx_data[1] | (rx_data[2] << 8) | (rx_data[3] << 16) | (rx_data[4] << 24);
-                if (this.fw_image.length != nbr_bytes)
+                console.log("Unsupported notification from UUID: " + event.target.uuid);
+            }
+        }
+
+        sm_reset()
+        {
+            console.log("SM reset");
+            var tx_data = new Uint8Array([this.commands['OP_CODE_ACTIVATE_N_RESET']]);
+            this._writeCharacteristicValue(this.charUUID['dfu_cp'], tx_data);
+            var characteristic = this._stopNotifications(this.charUUID['dfu_cp']);
+            characteristic.removeEventListener('characteristicvaluechanged', handlePtekDfuValueChanged);
+            delete this.sm;
+        }
+
+        performtek_send_pkt()
+        {
+            var tx_slice= new Uint8Array(this.fw_image.slice(this.tx_index, Math.min(this.tx_index + this.PKT_1K_SIZE, this.fw_image.length)));
+            var pkt_index = 0;
+            var tx_ok = true;   // We want to send the first MTU
+            var send_success = true;
+
+            while (this.PKT_1K_SIZE != pkt_index)
+            {
+                if (tx_ok)
                 {
-                    console.log("Some error here!");
+                    var tx_data = tx_slice.slice(pkt_index, Math.min(pkt_complete + 20, this.PKT_1K_SIZE));
+                    tx_ok = false;
+                    var ret_write = this._writeCharacteristicValue(this.charUUID['dfu_pkt'], tx_data);
+                    ret_write.then(_ => {
+                        //console.log('Write OK');
+                        tx_ok = true;
+                        pkt_index = Math.min(pkt_complete + 20, this.PKT_1K_SIZE);
+                    })
+                    .catch(error => {
+                        log('Argh! write error: ' + error);
+                        send_success = false;
+                        this.sm_reset();
+                    });
                 }
-                this.sm.make_transition('PTEK_FW_END', null);
             }
+            this.tx_index = Math.min(this.tx_index + this.PKT_1K_SIZE, this.fw_image.length);
+            console.log("TX index: " + this.tx_index);
         }
-        else
-        {
-            console.log("Unsupported notification from UUID: " + event.target.uuid);
-        }
-    }
-
-    sm_reset()
-    {
-        console.log("SM reset");
-        var tx_data = new Uint8Array([this.commands['OP_CODE_ACTIVATE_N_RESET']]);
-        _writeCharacteristicValue('dfu_cp', tx_data);
-        var characteristic = _stopNotifications(this.charUUID['dfu_cp']);
-        characteristic.removeEventListener('characteristicvaluechanged', handlePtekDfuValueChanged);
-        delete this.sm;
-    }
-
-    performtek_send_pkt()
-    {
-        var tx_slice= new Uint8Array(this.fw_image.slice(this.tx_index, Math.min(this.tx_index + this.PKT_1K_SIZE, this.fw_image.length)));
-        var pkt_index = 0;
-        var tx_ok = true;   // We want to send the first MTU
-        var send_success = true;
-
-        while (this.PKT_1K_SIZE != pkt_index)
-        {
-            if (tx_ok)
-            {
-                var tx_data = tx_slice.slice(pkt_index, Math.min(pkt_complete + 20, this.PKT_1K_SIZE));
-                tx_ok = false;
-                var ret_write = _writeCharacteristicValue('dfu_pkt', tx_data);
-                ret_write.then(_ => {
-                    //console.log('Write OK');
-                    tx_ok = true;
-                    pkt_index = Math.min(pkt_complete + 20, this.PKT_1K_SIZE);
-               })
-                .catch(error => {
-                    log('Argh! write error: ' + error);
-                    send_success = false;
-                    this.sm_reset();
-                });
-            }
-        }
-        this.tx_index = Math.min(this.tx_index + this.PKT_1K_SIZE, this.fw_image.length);
-        console.log("TX index: " + this.tx_index);
     }
 
     class SM
@@ -352,13 +343,14 @@
             this.stateTable = state_table;
             this.currentState = init_state;
             this.guardState = guard_state;
-            var stateVal == '';
-            for (var i = 0; i < this.stateTable.length ; i++)
+            var stateVal = '';
+            for (var i = 0; i < this.stateTable.length; i++)
             {
-                if (stateval != this.stateTable[i].state)
+                if (stateVal != this.stateTable[i].sm_state)
                 {
-                    this.stateTableHashmap[i] = i;
-                    stateVal = this.stateTable[i].state;
+                    this.stateTableHashmap[this.stateTable[i].sm_state] = i;
+                    stateVal = this.stateTable[i].sm_state;
+                    console.log("hash map: " + stateVal + " value: " + i);
                 }
             }
         }
@@ -366,7 +358,7 @@
         make_transition(current_event, data)
         {
             var table_index = this.stateTableHashmap[this.currentState];
-
+            console.log("Current state: " + this.currentState + " val: " + table_index);
             if (table_index == null)
             {
                 console.log("State not present in table");

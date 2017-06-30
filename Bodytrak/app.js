@@ -1,8 +1,8 @@
 document.getElementById("search").addEventListener('click', function()
 {
-    addLoader();
+     addLoader();
 
-     //bodytrak.connect()
+     bodytrak.connect()
      document.getElementById("loader").style.display = "none";
      // TODO: display PerformTek version and if there is a new one enable a button to go to update, which will bring file browser in focus
      document.getElementById("browse").style.display = "initial";
@@ -45,7 +45,7 @@ document.getElementById("send_file").addEventListener('click', function()
     {
         var fw_array = new Uint8Array(e.target.result);
         bodytrak.sm_init();
-        bodytrak.sm_init_ptek(fw_array);
+        bodytrak.sm_ptek_update(fw_array);
 
         // Ensure that the progress bar displays 100% at the end.
         progress.style.width = '100%';
