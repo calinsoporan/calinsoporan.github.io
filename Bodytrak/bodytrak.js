@@ -326,7 +326,9 @@
                     .catch(error => {
                         log('Argh! write error: ' + error);
                         send_success = false;
+                        // TODO: retry here?
                         this.sm_reset();
+                        break;
                     });
                 }
             }
