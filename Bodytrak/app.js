@@ -2,10 +2,12 @@ document.getElementById("search").addEventListener('click', function()
 {
      addLoader();
 
-     bodytrak.connect()
-     document.getElementById("loader").style.display = "none";
-     // TODO: display PerformTek version and if there is a new one enable a button to go to update, which will bring file browser in focus
-     document.getElementById("browse").style.display = "initial";
+     bodytrak.connect().
+     then(() => {
+        document.getElementById("loader").style.display = "none";
+        // TODO: display PerformTek version and if there is a new one enable a button to go to update, which will bring file browser in focus
+        document.getElementById("browse").style.display = "initial";
+     });
 });
 
 document.getElementById('choose_file').addEventListener('change', function()

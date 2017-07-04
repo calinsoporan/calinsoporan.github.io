@@ -106,15 +106,16 @@
                                   'BLE_DFU_RESP_VAL_OPER_FAILED' : 6,
                                   'BLE_DFU_RESP_SEND_NEXT_1K' : 7,
                                  };
+            //myObj=this;
         }
 
         connect()
         {
             console.log('Requesting any Bluetooth Device...');
-            navigator.bluetooth.requestDevice({filters:[{name:[ "BodyTrak" ]}],
-                                               optionalServices: [
-                                                                 this.serviceUUID['ptek'],
-                                                                 ]
+            return navigator.bluetooth.requestDevice({filters:[{name:[ "BodyTrak" ]}],
+                                                     optionalServices: [
+                                                                        this.serviceUUID['ptek'],
+                                                                       ]
                                               })
             .then(device => {
                 this.device = device
@@ -135,13 +136,10 @@
                          characteristics.forEach(characteristic => {
                              console.log('>> Characteristic: ' + characteristic.uuid);
                              this._cacheCharacteristic(characteristic.uuid, characteristic);
-                         });
-                    });
+                         })
+                    })
                 })
             })
-            .catch(error => {
-                console.log('Argh! ' + error);
-            });
         }
 
         /* Utility functions */
@@ -173,7 +171,7 @@
             let characteristic = this._characteristics.get(characteristicUuid);
             // Returns characteristic to set up characteristicvaluechanged event handlers in the resolved promise.
             return characteristic.startNotifications()
-            .then(() => characteristic);
+            .then(() => {return characteristic});
         }
 
         _stopNotifications(characteristicUuid)
@@ -181,7 +179,7 @@
             let characteristic = this._characteristics.get(characteristicUuid);
             // Returns characteristic to remove characteristicvaluechanged event handlers in the resolved promise.
             return characteristic.stopNotifications()
-            .then(() => characteristic);
+            .then(() => characteristic.addEventListener('characteristicvaluechanged', this.handlePtekDfuValueChanged));
         }
 
         _set_uuid(base_uuid, short_uuid)
@@ -192,7 +190,7 @@
         // Bodytrak state machine
         sm_init()
         {
-            this.sm = new SM();
+            this.sm = new SM(this);
             var sm_table = [
                         { sm_state: 'STATE_INIT',               sm_event: 'START_PTEK_UPDATE',  sm_action: this.performtek_update_start,     sm_next_state: 'STATE_START_PTEK_UPDATE' },
                         { sm_state: 'STATE_START_PTEK_UPDATE',  sm_event: 'SEND_PTEK_FW',       sm_action: this.performtek_send_pkt,         sm_next_state: 'STATE_SEND_PTEK_FW'      },
@@ -213,16 +211,15 @@
             }
             this.fw_image = fw_data;
             this.tx_index = 0;
-            this.sm.make_transition('START_PTEK_UPDATE', null);
+            this.sm.make_transition('START_PTEK_UPDATE', 1);
             return true;
         }
 
-        performtek_update_start()
+        performtek_update_start(data)
         {
-            var characteristic = this._startNotifications(this.charUUID['dfu_cp']);
-            characteristic.addEventListener('characteristicvaluechanged', handlePtekDfuValueChanged);
+            this._startNotifications(this.charUUID['ptek_cp']).then(characteristic => characteristic.addEventListener('characteristicvaluechanged', this.handlePtekDfuValueChanged.bind(this)));
             var nbr_of_pkts = Math.ceil(this.fw_image.length / this.PKT_1K_SIZE);
-            var tx_data = new Uint8Array([this.commands['OP_CODE_START_UPDATE'],
+            var tx_data = new Uint8Array([this.dfu_op_code['OP_CODE_START_UPDATE'],
                                       (nbr_of_pkts & 0x00FF),
                                       (nbr_of_pkts & 0xFF00) >> 8,
                                       (this.fw_image.length & 0x000000FF),
@@ -230,22 +227,26 @@
                                       (this.fw_image.length & 0x00FF0000) >> 16,
                                       (this.fw_image.length & 0xFF000000) >> 24
                                      ]);
-            var value = this._writeCharacteristicValue(this.charUUID['dfu_cp'], tx_data);
+            var value = this._writeCharacteristicValue(this.charUUID['ptek_cp'], tx_data);
         }
 
         handlePtekDfuValueChanged(event)
         {
-            if (event.target.uuid = this.charUUID['dfu_cp'])
+            console.log("Callback received");
+            var val = event.target.value;
+            var rx_data = val.buffer ? val : new DataView(val);
+            console.log("Resp: " + rx_data.getUint8(0));
+            if (event.target.uuid == this.charUUID['ptek_cp'])
             {
-                var rx_data = new Uint8Array(event.target.value);
-                if (this.dfu_op_code['OP_CODE_RESPONSE'] == rx_data[0])
+                if (this.dfu_op_code['OP_CODE_RESPONSE'] == rx_data.getUint8(0))
                 {
-                    switch (rx_data[1])
+                    switch (rx_data.getUint8(1))
                     {
                         case this.dfu_procedure['BLE_DFU_START_PROCEDURE']:
-                            switch (rx_data[2])
+                            switch (rx_data.getUint8(2))
                             {
                                 case this.dfu_resp_val['BLE_DFU_RESP_VAL_SUCCESS']:
+                                    console.log("dfu start proce success");
                                     this.sm.make_transition('SEND_PTEK_FW', null);
 
                                 default:
@@ -255,9 +256,10 @@
                             break;
 
                         case this.dfu_resp_val['BLE_DFU_RECEIVE_APP_PROCEDURE']:
-                            switch (rx_data[2])
+                            switch (rx_data.getUint8(2))
                             {
                                 case this.dfu_resp_val['BLE_DFU_RESP_SEND_NEXT_1K']:
+                                    console.log("send nex 1k");
                                     this.sm.make_transition('SEND_PTEK_FW', null);
 
                                 default:
@@ -271,14 +273,19 @@
                             this.sm.make_transition('ERROR', null);
                     }
                 }
-                else if (this.dfu_op_code['OP_CODE_PKT_RCPT_NOTIF'] == rx_data[0])
+                else if (this.dfu_op_code['OP_CODE_PKT_RCPT_NOTIF'] == rx_data.getUint8(0))
                 {
-                    var nbr_bytes = rx_data[1] | (rx_data[2] << 8) | (rx_data[3] << 16) | (rx_data[4] << 24);
+                    var nbr_bytes = rx_data.getUint8(1) | (rx_data.getUint8(2) << 8) | (rx_datagetUint8(3) << 16) | (rx_data.getUint8(4) << 24);
                     if (this.fw_image.length != nbr_bytes)
                     {
                         console.log("Some error here!");
                     }
                     this.sm.make_transition('PTEK_FW_END', null);
+                    console.log("FW tx end");
+                }
+                else
+                {
+                    console.log("Response code not supported!");
                 }
             }
             else
@@ -290,10 +297,10 @@
         sm_reset()
         {
             console.log("SM reset");
-            var tx_data = new Uint8Array([this.commands['OP_CODE_ACTIVATE_N_RESET']]);
-            this._writeCharacteristicValue(this.charUUID['dfu_cp'], tx_data);
-            var characteristic = this._stopNotifications(this.charUUID['dfu_cp']);
-            characteristic.removeEventListener('characteristicvaluechanged', handlePtekDfuValueChanged);
+            var tx_data = new Uint8Array([this.dfu_op_code['OP_CODE_ACTIVATE_N_RESET']]);
+            this._writeCharacteristicValue(this.charUUID['ptek_cp'], tx_data);
+            var characteristic = this._stopNotifications(this.charUUID['ptek_cp']);
+            characteristic.removeEventListener('characteristicvaluechanged', this.handlePtekDfuValueChanged.bind(this));
             delete this.sm;
         }
 
@@ -303,18 +310,18 @@
             var pkt_index = 0;
             var tx_ok = true;   // We want to send the first MTU
             var send_success = true;
-
+            console.log("1k size: " + this.PKT_1K_SIZE);
             while (this.PKT_1K_SIZE != pkt_index)
             {
                 if (tx_ok)
                 {
-                    var tx_data = tx_slice.slice(pkt_index, Math.min(pkt_complete + 20, this.PKT_1K_SIZE));
+                    var tx_data = tx_slice.slice(pkt_index, Math.min(pkt_index + 20, this.PKT_1K_SIZE));
                     tx_ok = false;
-                    var ret_write = this._writeCharacteristicValue(this.charUUID['dfu_pkt'], tx_data);
+                    var ret_write = this._writeCharacteristicValue(this.charUUID['ptek_pkt'], tx_data);
                     ret_write.then(_ => {
-                        //console.log('Write OK');
+                        console.log('Write OK');
                         tx_ok = true;
-                        pkt_index = Math.min(pkt_complete + 20, this.PKT_1K_SIZE);
+                        pkt_index = Math.min(pkt_index + 20, this.PKT_1K_SIZE);
                     })
                     .catch(error => {
                         log('Argh! write error: ' + error);
@@ -326,16 +333,22 @@
             this.tx_index = Math.min(this.tx_index + this.PKT_1K_SIZE, this.fw_image.length);
             console.log("TX index: " + this.tx_index);
         }
+
+        performtek_reset()
+        {
+            console.log("Ptek reset");
+        }
     }
 
     class SM
     {
-        constructor()
+        constructor(obj)
         {
             this.currentState = 0;
             this.stateTable = null;
             this.guardState = '';
             this.stateTableHashmap = {};
+            this.bindObj = obj;
         }
 
         init_sm(state_table, init_state, guard_state)
@@ -368,7 +381,7 @@
             {
                 if (this.stateTable[table_index].sm_event == current_event)
                 {
-                    this.stateTable[table_index].sm_action(data);
+                    this.stateTable[table_index].sm_action.call(this.bindObj, data);
                     this.currentState = this.stateTable[table_index].sm_next_state;
                     break;
                 }
