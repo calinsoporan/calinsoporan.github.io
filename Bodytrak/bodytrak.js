@@ -271,7 +271,7 @@
                             switch (rx_data.getUint8(2))
                             {
                                 case this.dfu_resp_val['BLE_DFU_RESP_SEND_NEXT_1K']:
-                                    console.log("send nex 1k");
+                                    console.log("send next 1k");
                                     this.sm.make_transition('SEND_PTEK_FW', null);
                                     break;
 
@@ -290,7 +290,7 @@
                 }
                 else if (this.dfu_op_code['OP_CODE_PKT_RCPT_NOTIF'] == rx_data.getUint8(0))
                 {
-                    var nbr_bytes = rx_data.getUint8(1) | (rx_data.getUint8(2) << 8) | (rx_datagetUint8(3) << 16) | (rx_data.getUint8(4) << 24);
+                    var nbr_bytes = rx_data.getUint8(1) | (rx_data.getUint8(2) << 8) | (rx_data.getUint8(3) << 16) | (rx_data.getUint8(4) << 24);
                     if (this.fw_image.length != nbr_bytes)
                     {
                         console.log("Some error here!");
@@ -326,9 +326,12 @@
             var tx_data= new Uint8Array(this.fw_image.slice(this.tx_index, this.tx_index + this.end_slice));
             console.log("Data to be sent " + tx_data);
             this._writeCharacteristicValue(this.charUUID['ptek_pkt'], tx_data).then(_ => {
+                this.pkt_index += this.end_slice;
+                this.tx_index = this.tx_index + this.end_slice;
                 if (this.pkt_index == this.PKT_1K_SIZE)
                 {
                     this.pkt_index = 0;
+                    this.end_slice = 20;
                 }
                 else
                 {
@@ -337,8 +340,6 @@
                         this.end_slice = this.PKT_1K_SIZE - this.pkt_index;
                     }
                     this.end_slice = Math.min(this.end_slice, this.fw_image.length - this.tx_index);
-                    this.pkt_index += this.end_slice;
-                    this.tx_index = this.tx_index + this.end_slice;
                     console.log("Index: " + this.tx_index + " end slice: " + this.end_slice +  " pkt index:  " + this.pkt_index);
                     if (this.tx_index < this.fw_image.length)
                     {
