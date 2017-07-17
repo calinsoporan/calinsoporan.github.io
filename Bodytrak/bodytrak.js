@@ -436,7 +436,7 @@
             {
                 //TODO: Add support for events here
                 table_index = this.stateTableHashmap[this.currentState];
-                this.stateTable[table_index].sm_action();
+                this.stateTable[table_index].sm_action.call(this.bindObj);
                 this.currentState = this.stateTable[table_index].sm_next_state;
             }
             return true;
