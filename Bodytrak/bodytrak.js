@@ -312,12 +312,14 @@
         sm_reset()
         {
             console.log("SM reset");
-            var tx_data = new Uint8Array([this.dfu_op_code['OP_CODE_ACTIVATE_N_RESET']]);
-            this._writeCharacteristicValue(this.charUUID['ptek_cp'], tx_data);
-            this._stopNotifications(this.charUUID['ptek_cp']).then(_ => {
-                characteristic.removeEventListener('characteristicvaluechanged', this.handlePtekDfuValueChanged.bind(this));
-            })
-            .catch(error => {console.log("Stop notification error");});
+            this._characteristics.get(this.charUUID['ptek_cp']).removeEventListener('characteristicvaluechanged', this.handlePtekDfuValueChanged.bind(this));
+            if (this.device.gatt.connected)
+            {
+                var tx_data = new Uint8Array([this.dfu_op_code['OP_CODE_ACTIVATE_N_RESET']]);
+                this._writeCharacteristicValue(this.charUUID['ptek_cp'], tx_data);
+                this._stopNotifications(this.charUUID['ptek_cp']);
+                delete this._characteristics;
+            }
             delete this.sm;
         }
 
