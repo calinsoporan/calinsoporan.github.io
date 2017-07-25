@@ -312,6 +312,11 @@
         sm_reset()
         {
             console.log("SM reset");
+            if (!this._characteristics)
+            {
+                // Already reset
+                return;
+            }
             this._characteristics.get(this.charUUID['ptek_cp']).removeEventListener('characteristicvaluechanged', this.handlePtekDfuValueChanged.bind(this));
             if (this.device.gatt.connected)
             {
@@ -321,6 +326,7 @@
                 delete this._characteristics;
             }
             delete this.sm;
+            //TODO: add file browse: document.getElementById("file_paragraph").style.display = "initial";
         }
 
         performtek_send_pkt()
