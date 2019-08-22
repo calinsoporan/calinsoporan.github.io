@@ -23,16 +23,13 @@
                                 'bis'         : 0x180F,
                                 'hts'         : 0x1809,
                                 'rscs'        : 0x1814,
-                                'dfu'         : this.dfuBaseUUID,
-                                'rmas'        : this._set_uuid(this.bleBaseUUID, "0100"),
+                                //'dfu'         : this.dfuBaseUUID,
+                                //'rmas'        : this._set_uuid(this.bleBaseUUID, "0100"),
                                 'vo2'         : this._set_uuid(this.bleBaseUUID, "0200"),
-                                'acc'         : this._set_uuid(this.bleBaseUUID, "0300"),
-                                'vp_conf'     : this._set_uuid(this.bleBaseUUID, "0400"),
-                                'sensor_conf' : this._set_uuid(this.bleBaseUUID, "0500"),
-                                'log'         : this._set_uuid(this.bleBaseUUID, "0600"),
-                                'rtd'         : this._set_uuid(this.bleBaseUUID, "0700"),
-                                'workout'     : this._set_uuid(this.bleBaseUUID, "0800"),
-                                'ptek'        : this._set_uuid(this.bleBaseUUID, "0900"),
+                                //'acc'         : this._set_uuid(this.bleBaseUUID, "0300"),
+                                //'vp_conf'     : this._set_uuid(this.bleBaseUUID, "0400"),
+                                //'sensor_conf' : this._set_uuid(this.bleBaseUUID, "0500"),
+                                'log'         : this._set_uuid(this.bleBaseUUID, "0900"),
                               };
              this.charUUID = {'dis_manufac_name'    : 0x2A29,
                               'dis_model_nbr'       : 0x2A24,
@@ -44,14 +41,14 @@
                               'hts_meas'            : 0x2A1C,
                               'rscs_meas'           : 0x2A53,
                               'rscs_feature'        : 0x2A54,
-                              'dfu_pkt'             : this._set_uuid(this.dfuBaseUUID, "1532"),
-                              'dfu_cp'              : this._set_uuid(this.dfuBaseUUID, "1531"),
-                              'dfu_rev'             : this._set_uuid(this.dfuBaseUUID, "1534"),
-                              'rmas_meas'           : this._set_uuid(this.bleBaseUUID, "0101"),
+                              //'dfu_pkt'             : this._set_uuid(this.dfuBaseUUID, "1532"),
+                              //'dfu_cp'              : this._set_uuid(this.dfuBaseUUID, "1531"),
+                              //'dfu_rev'             : this._set_uuid(this.dfuBaseUUID, "1534"),
+                              //'rmas_meas'           : this._set_uuid(this.bleBaseUUID, "0101"),
                               'vo2_meas'            : this._set_uuid(this.bleBaseUUID, "0201"),
-                              'acc_meas'            : this._set_uuid(this.bleBaseUUID, "0301"),
-                              'acc_cp'              : this._set_uuid(this.bleBaseUUID, "0302"),
-                              'vp_conf_cp'          : this._set_uuid(this.bleBaseUUID, "0401"),
+                              //'acc_meas'            : this._set_uuid(this.bleBaseUUID, "0301"),
+                              //'acc_cp'              : this._set_uuid(this.bleBaseUUID, "0302"),
+                              /*'vp_conf_cp'          : this._set_uuid(this.bleBaseUUID, "0401"),
                               'sns_conf_age'        : this._set_uuid(this.bleBaseUUID, "0501"),
                               'sns_conf_gender'     : this._set_uuid(this.bleBaseUUID, "0502"),
                               'sns_conf_weight'     : this._set_uuid(this.bleBaseUUID, "0503"),
@@ -72,18 +69,12 @@
                               'sns_conf_cbtunits'   : this._set_uuid(this.bleBaseUUID, "0512"),
                               'sns_conf_distunits'  : this._set_uuid(this.bleBaseUUID, "0513"),
                               'sns_conf_antenable'  : this._set_uuid(this.bleBaseUUID, "0514"),
-                              'log_rtc'             : this._set_uuid(this.bleBaseUUID, "0601"),
-                              'log_config'          : this._set_uuid(this.bleBaseUUID, "0602"),
-                              'log_reset'           : this._set_uuid(this.bleBaseUUID, "0603"),
-                              'log_status'          : this._set_uuid(this.bleBaseUUID, "0604"),
-                              'log_dl_req'          : this._set_uuid(this.bleBaseUUID, "0605"),
-                              'log_dl_data'         : this._set_uuid(this.bleBaseUUID, "0606"),
-                              'rtd_meas'            : this._set_uuid(this.bleBaseUUID, "0701"),
-                              'workout_cp'          : this._set_uuid(this.bleBaseUUID, "0801"),
-                              'ptek_cp'             : this._set_uuid(this.bleBaseUUID, "0901"),
-                              'ptek_pkt'            : this._set_uuid(this.bleBaseUUID, "0902"),
-                              'ptek_rev'            : this._set_uuid(this.bleBaseUUID, "0903"),
+                              */
+                              'log_notif'           : this._set_uuid(this.bleBaseUUID, "0901"),
+                              'log_rtc'             : this._set_uuid(this.bleBaseUUID, "0901"),
+                              'log_config_cp'       : this._set_uuid(this.bleBaseUUID, "0902"),
                             };
+            /*
             this.dfu_op_code = { 'OP_CODE_START_UPDATE' : 1,
                                  'OP_CODE_RECEIVE_INIT' : 2,
                                  'OP_CODE_RECEIVE_FW' : 3,
@@ -110,14 +101,24 @@
                                   'BLE_DFU_RESP_SEND_NEXT_1K' : 7,
                                  };
             //myObj=this;
+            */
         }
 
         connect()
         {
             console.log('Requesting any Bluetooth Device...');
-            return navigator.bluetooth.requestDevice({filters:[{name:[ "BodyTrak" ]}],
-                                                     optionalServices: [
-                                                                        this.serviceUUID['ptek'],
+            return navigator.bluetooth.requestDevice({
+                                            filters:[
+                                                {namePrefix:[ "BodyTrak" ]},
+                                                /*{services:
+                                                    [
+                                                     this.serviceUUID['dis'],
+                                                     this.serviceUUID['hrs']
+                                                    ]
+                                                }*/
+                                                    ],
+                                            optionalServices: [
+                                                this.serviceUUID['log'],
                                                                        ]
                                               })
             .then(device => {

@@ -104,4 +104,17 @@
     height: auto;
     width: 0;
   }
-  
+ 
+#output_log {
+    background-color:#333333;
+    width: 80rem;
+    min-height: 24rem;
+    display: block;
+    font-size: 12px;
+    font-family: Consolas,monaco,monospace;
+    position: absolute;
+    bottom:10%;
+    right:20%;
+    display: none;
+
+}

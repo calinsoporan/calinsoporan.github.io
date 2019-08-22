@@ -1,12 +1,12 @@
 document.getElementById("search").addEventListener('click', function()
 {
-     addLoader();
-
+    addLoader();
+     
      bodytrak.connect().
      then(() => {
         document.getElementById("loader").style.display = "none";
-        // TODO: display PerformTek version and if there is a new one enable a button to go to update, which will bring file browser in focus
-        document.getElementById("browse").style.display = "initial";
+        //document.getElementById("browse").style.display = "initial";
+        document.getElementById("output_log").style.display = "initial";
      })
      .catch(error => {
          console.log("Connect error");
